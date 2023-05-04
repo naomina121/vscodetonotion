@@ -1,10 +1,11 @@
 {
   "name": "vscodetonotion",
   "displayName": "VScodeToNotion",
-  "description": "VScodeから任意のNotionのデーターベースを編集することが可能な拡張機能です。",
+  "description": "VSCodeからNotion直接編集できる拡張機能",
   "version": "0.0.1",
+  "publisher": "nao",
   "engines": {
-    "vscode": "^1.78.0"
+    "vscode": "^1.77.0"
   },
   "categories": [
     "Other"
@@ -14,10 +15,113 @@
   "contributes": {
     "commands": [
       {
-        "command": "vscodetonotion.helloWorld",
-        "title": "Hello World"
+        "command": "vscodetonotion.show",
+        "title": "この項目をエディタで開く"
+      },
+      {
+        "command": "vscodetonotion.notionToConection",
+        "title": "Notion一覧を表示させる"
+      },
+      {
+        "command": "vscodetonotion.settings",
+        "title": "設定ファイルを開く"
+      },
+      {
+        "command": "vscodetonotion.deleteEntry",
+        "title": "削除する"
+      },
+      {
+        "command": "vscodetonotion.addEntry",
+        "title": "新規でファイルを作成する",
+        "icon": {
+          "light": "resources/light/add.svg",
+          "dark": "resources/dark/add.svg"
+        }
+      },
+      {
+        "command": "vscodetonotion.editEntry",
+        "title": "このファイルを編集する",
+        "icon": {
+          "light": "resources/light/edit.svg",
+          "dark": "resources/dark/edit.svg"
+        }
+      },
+      {
+        "command": "vscodetonotion.refreshEntry",
+        "title": "更新する",
+        "icon": {
+          "light": "resources/light/refresh.svg",
+          "dark": "resources/dark/refresh.svg"
+        }
       }
-    ]
+    ],
+    "configuration": {
+      "title": "NotionとVSCodeを接続する",
+      "properties": {
+        "vscodetonotion.api": {
+          "type": "string",
+          "default": "",
+          "description": "APIを設定してください"
+        },
+        "vscodetonotion.databaseId": {
+          "type": "string",
+          "default": "",
+          "description": "データーベースIDを設定してください"
+        }
+      }
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "vscodetonotion.refreshEntry",
+          "when": "view == package-openPages",
+          "group": "navigation"
+        },
+        {
+          "command": "vscodetonotion.addEntry",
+          "when": "view == package-openPages"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "vscodetonotion.show",
+          "when": "view == package-openPages"
+        },
+        {
+          "command": "vscodetonotion.editEntry",
+          "when": "view == package-openPages && viewItem == dependency",
+          "group": "inline"
+        },
+        {
+          "command": "vscodetonotion.deleteEntry",
+          "when": "view == package-openPages && viewItem == dependency"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "package-openPages",
+        "contents": "まず、設定画面を開いて、NotionのAPIと使用するデーターベースIDを入力します。\n [設定画面を開く](command:vscodetonotion.settings)\nNotionとの接続設定がお済みの方は、Notions一覧ページを開いてください \n [Notionのページ一覧を開く](command:vscodetonotion.notionToConection)",
+        "when": "workbenchState == empty"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "notion-explorer",
+          "title": "VscodeToNotion",
+          "icon": "/resources/package-notion-svgrepo-com.svg"
+        }
+      ]
+    },
+    "views": {
+      "notion-explorer": [
+        {
+          "id": "package-openPages",
+          "name": "Notionのページ"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",
@@ -31,19 +135,23 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.78.0",
+    "@notionhq/client": "^2.2.5",
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
+    "@types/vscode": "^1.77.0",
     "@typescript-eslint/eslint-plugin": "^5.59.1",
     "@typescript-eslint/parser": "^5.59.1",
+    "@vscode/test-electron": "^2.3.0",
     "eslint": "^8.39.0",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
-    "typescript": "^5.0.4",
     "ts-loader": "^9.4.2",
+    "typescript": "^5.0.4",
     "webpack": "^5.81.0",
-    "webpack-cli": "^5.0.2",
-    "@vscode/test-electron": "^2.3.0"
+    "webpack-cli": "^5.0.2"
+  },
+  "dependencies": {
+    "rimraf": "^5.0.0"
   }
 }

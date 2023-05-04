@@ -1,26 +1,84 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { fetchPages } from './utils/notion';
+import { postTitle } from './utils/data';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+  // Notion一覧ページを表示する
+  let showPage = vscode.commands.registerCommand(
+    'vscodetonotion.notionToConection',
+    async () => {
+      // メッセージを表示
+      const message = vscode.window.showInformationMessage(
+        'Notion一覧を開きます',
+        {
+          modal: true,
+        }
+      );
+      // ページ一覧を表示させる。
+      const { results: pages } = await fetchPages();
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "vscodetonotion" is now active!');
+      const element = 'package-openPages';
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('vscodetonotion.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from VScodeToNotion!');
-	});
+      const treeView = await vscode.window.createTreeView(element, {
+        canSelectMany: true,
+        treeDataProvider: {
+          getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+            return element;
+          },
 
-	context.subscriptions.push(disposable);
+          getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
+            return pages.map(
+              (page: any) => new vscode.TreeItem(postTitle(page))
+            );
+          },
+        },
+      });
+
+      const showDisposable = vscode.commands.registerCommand(
+        'vscodetonotion.show',
+        (element: vscode.TreeItem) => {
+          if (element) {
+            vscode.window.showInformationMessage(`エディタが立ち上がります。`, {
+              modal: true,
+            });
+          }
+        }
+      );
+
+      context.subscriptions.push(showDisposable);
+    }
+  );
+
+  // Notionの一覧ページを更新する
+  let refresh = vscode.commands.registerCommand(
+    'vscodetonotion.refreshEntry',
+    async () => {}
+  );
+
+  // Notionのページを新規追加する
+  let notionAdd = vscode.commands.registerCommand(
+    'vscodetonotion.addEntry',
+    async () => {}
+  );
+
+  // Notionのページを削除する
+  let notionDelete = vscode.commands.registerCommand(
+    'vscodetonotion.deleteEntry',
+    async () => {}
+  );
+
+  // Notionの設定ページを表示する
+  let settigns = vscode.commands.registerCommand(
+    'vscodetonotion.settings',
+    async () => {
+      vscode.commands.executeCommand(
+        'workbench.action.openSettings',
+        'NotionとVSCodeを接続する'
+      );
+    }
+  );
+
+  context.subscriptions.push(showPage);
+  context.subscriptions.push(settigns);
 }
-
-// This method is called when your extension is deactivated
 export function deactivate() {}
