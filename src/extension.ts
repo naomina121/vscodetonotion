@@ -52,7 +52,40 @@ export function activate(context: vscode.ExtensionContext) {
   // Notionの一覧ページを更新する
   let refresh = vscode.commands.registerCommand(
     'vscodetonotion.refreshEntry',
-    async () => {}
+    async () => {
+      // ページ一覧を表示させる。
+      const { results: pages } = await fetchPages();
+
+      const element = 'package-openPages';
+
+      const treeView = await vscode.window.createTreeView(element, {
+        canSelectMany: true,
+        treeDataProvider: {
+          getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
+            return element;
+          },
+
+          getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
+            return pages.map(
+              (page: any) => new vscode.TreeItem(postTitle(page))
+            );
+          },
+        },
+      });
+
+      const showDisposable = vscode.commands.registerCommand(
+        'vscodetonotion.show',
+        (element: vscode.TreeItem) => {
+          if (element) {
+            vscode.window.showInformationMessage(`エディタが立ち上がります。`, {
+              modal: true,
+            });
+          }
+        }
+      );
+
+      context.subscriptions.push(showDisposable);
+    }
   );
 
   // Notionのページを新規追加する
