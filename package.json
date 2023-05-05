@@ -23,6 +23,10 @@
         "title": "TESTをする"
       },
       {
+        "command": "vscodetonotion.sendEntry",
+        "title": "Notionのページをエディター内容を送信する"
+      },
+      {
         "command": "vscodetonotion.settings",
         "title": "設定ファイルを開く"
       },
@@ -75,6 +79,13 @@
       }
     },
     "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.sendEntry",
+          "group": "myGroup@1"
+        }
+      ],
       "view/title": [
         {
           "command": "vscodetonotion.addEntry",
@@ -155,6 +166,7 @@
   },
   "dependencies": {
     "@tryfabric/martian": "^1.2.4",
+    "gray-matter": "^4.0.3",
     "notion-to-md": "^2.5.6",
     "rimraf": "^5.0.0"
   }

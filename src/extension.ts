@@ -1,50 +1,95 @@
 import * as vscode from 'vscode';
+
 import {
   archivePage,
+  createPage,
   fetchPages,
   n2m,
   retrievePageProperties,
+  updatePage,
 } from './utils/notion';
 import { getPropertiesRichText, postTitle } from './utils/data';
+import { mdToBlocks } from './utils/mdToBlocks';
+import { markdownToBlocks } from '@tryfabric/martian';
 
 export function activate(context: vscode.ExtensionContext) {
   // test
   let test = vscode.commands.registerCommand(
     'vscodetonotion.test',
     async () => {
-      // ページ一覧を表示させる。
-      const { results: pages } = await fetchPages({});
+      //sampleMDを取得
+      const markdown = `---
+description: 私という存在をお疑いになるのですか？
+title: 私ですが、何かありましたか？
+mdUpdate: false,
+---
 
-      // Pageを取得
-      const page = pages[0];
+## 私です。
 
-      // ページのプロパティを取得
-      const properties = await retrievePageProperties(page.id);
 
-      // ページのキーを配列に格納
-      const keys = Object.keys(properties);
+それ以上もそれ以下でもありません。
 
-      // titleプロパティを取得し、titleを抽出
-      for (const [key, value] of Object.entries(properties)) {
-        if (value.type === 'title') {
-          await vscode.window.showInformationMessage(
-            `title: ${value.title[0].plain_text}`,
-            {
-              modal: true,
-            }
-          );
+
+### 私であることに対して、何も言うことはありません。
+
+
+ですから、私です。`;
+
+      const testtext = await vscode.window.showInformationMessage(`hello`, {
+        modal: true,
+      });
+
+      // マークダウンの中身をdata要素とcontent要素に分割
+      const dataWithContent = await mdToBlocks(String(markdown));
+      // ページのデータ要素を取得
+      const data = dataWithContent.data;
+
+      // ページのコンテンツ要素を取得
+      const content = dataWithContent.content;
+      // ページのデータをkeys:valuesの形式に変換
+      const properties = {};
+
+      // ページのデータをkeys:valuesの形式に変換
+      for (const [key, value] of Object.entries(data)) {
+        properties[key] = value;
+      }
+
+      // propertiesの中身を出力
+      const message = await vscode.window.showInformationMessage(
+        `properties:${properties['title']}`,
+        {
+          modal: true,
         }
+      );
 
-        // ページのキーを表示
-        const key = await vscode.window.showQuickPick(keys);
-
+      // mdUpdateの値によって更新するか新規作成するかどうか判定
+      if (properties['mdUpdate'] === 'true') {
+        // 更新する場合
         // メッセージを表示
-        const message = await vscode.window.showInformationMessage(
-          'Notion一覧を開きます',
+        const text = await vscode.window.showInformationMessage(
+          `トゥルーです🎵`,
           {
             modal: true,
           }
         );
+        return;
+      } else {
+        // 新規作成する場合
+        // メッセージを表示
+        const text = await vscode.window.showInformationMessage(
+          `ファルスですのう`,
+          {
+            modal: true,
+          }
+        );
+        // メッセージを表示
+        const message = await vscode.window.showInformationMessage(
+          `properties:${properties['title']}`,
+          {
+            modal: true,
+          }
+        );
+        return;
       }
     }
   );
@@ -126,22 +171,30 @@ export function activate(context: vscode.ExtensionContext) {
         for (let i = 0; i < keys.length; i++) {
           const key = keys[i];
           const value = values[i];
-          const type = value.type;
-          if (type === 'tags') {
-            // タグを配列に格納
-            const tags = [];
-            for (const [tag, i] of value.tags.multi_select) {
-              tags.push(tag.name);
-            }
-            mdProperties.push(`${key}: ${tags.join(', ')}`);
-          } else if (type === 'title') {
+          if (key === 'title') {
             mdProperties.push(`${key}: ${getPropertiesRichText(value.title)}`);
-          } else if (type === 'rich_text') {
+          } else if (key === 'description') {
             mdProperties.push(
               `${key}: ${getPropertiesRichText(value.rich_text)}`
             );
+          } else if (key === 'category') {
+            mdProperties.push(`${key}: ${value.select.name}`);
+          } else if (key === 'tags') {
+            // タグを配列に格納
+            const tags = [];
+            for (const tag of value.multi_select) {
+              tags.push(tag.name);
+            }
+            mdProperties.push(`${key}: ${tags.join(', ')}`);
+          } else {
+            continue;
           }
         }
+        // ページIDを含める
+        mdProperties.push(`pageId: ${pageId}`);
+
+        // 既存のファイルを更新するかどうか
+        mdProperties.push('mdUpdate: true');
         mdProperties.push('---');
 
         // プロパティをMarkdownに変換
@@ -226,6 +279,86 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Notionで更新、作成したエディタの情報を送信する
+  let notionSend = vscode.commands.registerCommand(
+    'vscodetonotion.sendEntry',
+    async () => {
+      const message = await vscode.window.showInformationMessage(
+        `Notionにエディタの情報を送信します`,
+        {
+          modal: true,
+        },
+        { title: '送信しない', isCloseAffordance: false },
+        { title: '送信する', isCloseAffordance: true }
+      );
+      if (message === undefined && message?.title === '送信しない') {
+        return;
+      } else if (message?.title === '送信する') {
+        // マークダウンを取得
+        const editor = await vscode.window.activeTextEditor;
+        const markdown = await editor?.document.getText();
+
+        const message = await vscode.window.showInformationMessage(
+          `properties:${markdown}`,
+          {
+            modal: true,
+          }
+        );
+
+        // マークダウンの中身をdata要素とcontent要素に分割
+        const dataWithContent = await mdToBlocks(String(markdown));
+
+        // ページのデータ要素を取得
+        const data = dataWithContent.data;
+
+        // ページのコンテンツ要素を取得
+        const content = markdownToBlocks(dataWithContent.content);
+
+        // ページのデータをkeys:valuesの形式に変換
+        const properties = {};
+
+        // ページのデータをkeys:valuesの形式に変換
+        for (const [key, value] of Object.entries(data)) {
+          properties[key] = value;
+        }
+
+        // mdUpdateの値によって更新するか新規作成するかどうか判定
+        if (properties['mdUpdate'] === true) {
+          // 更新する場合
+          const testtext = await vscode.window.showInformationMessage(
+            `更新します`,
+            {
+              modal: true,
+            }
+          );
+          // mdUpdateプロパティを削除
+          delete properties['mdUpdate'];
+
+          // ページのIDを取得
+          const pageId = properties['pageId'];
+
+          // ページを更新
+          await updatePage({
+            pageId: pageId,
+            data: properties,
+            content: content,
+          });
+        } else {
+          // 新規作成する場合
+          const testtext = await vscode.window.showInformationMessage(
+            `新規投稿します`,
+            {
+              modal: true,
+            }
+          );
+          // mdUpdateプロパティを削除
+          delete properties['mdUpdate'];
+          await createPage({ data: properties, content: content });
+        }
+      }
+    }
+  );
+
   // Notionの設定ページを表示する
   let settigns = vscode.commands.registerCommand(
     'vscodetonotion.settings',
@@ -240,6 +373,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(showPage);
   context.subscriptions.push(notionEdit);
   context.subscriptions.push(settigns);
+  context.subscriptions.push(notionAdd);
+  context.subscriptions.push(notionSend);
   context.subscriptions.push(test);
 }
 export function deactivate() {}
