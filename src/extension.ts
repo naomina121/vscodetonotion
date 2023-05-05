@@ -13,87 +13,6 @@ import { mdToBlocks } from './utils/mdToBlocks';
 import { markdownToBlocks } from '@tryfabric/martian';
 
 export function activate(context: vscode.ExtensionContext) {
-  // test
-  let test = vscode.commands.registerCommand(
-    'vscodetonotion.test',
-    async () => {
-      //sampleMDを取得
-      const markdown = `---
-description: 私という存在をお疑いになるのですか？
-title: 私ですが、何かありましたか？
-mdUpdate: false,
----
-
-## 私です。
-
-
-それ以上もそれ以下でもありません。
-
-
-### 私であることに対して、何も言うことはありません。
-
-
-ですから、私です。`;
-
-      const testtext = await vscode.window.showInformationMessage(`hello`, {
-        modal: true,
-      });
-
-      // マークダウンの中身をdata要素とcontent要素に分割
-      const dataWithContent = await mdToBlocks(String(markdown));
-      // ページのデータ要素を取得
-      const data = dataWithContent.data;
-
-      // ページのコンテンツ要素を取得
-      const content = dataWithContent.content;
-      // ページのデータをkeys:valuesの形式に変換
-      const properties = {};
-
-      // ページのデータをkeys:valuesの形式に変換
-      for (const [key, value] of Object.entries(data)) {
-        properties[key] = value;
-      }
-
-      // propertiesの中身を出力
-      const message = await vscode.window.showInformationMessage(
-        `properties:${properties['title']}`,
-        {
-          modal: true,
-        }
-      );
-
-      // mdUpdateの値によって更新するか新規作成するかどうか判定
-      if (properties['mdUpdate'] === 'true') {
-        // 更新する場合
-        // メッセージを表示
-        const text = await vscode.window.showInformationMessage(
-          `トゥルーです🎵`,
-          {
-            modal: true,
-          }
-        );
-        return;
-      } else {
-        // 新規作成する場合
-        // メッセージを表示
-        const text = await vscode.window.showInformationMessage(
-          `ファルスですのう`,
-          {
-            modal: true,
-          }
-        );
-        // メッセージを表示
-        const message = await vscode.window.showInformationMessage(
-          `properties:${properties['title']}`,
-          {
-            modal: true,
-          }
-        );
-        return;
-      }
-    }
-  );
-
   // Notion一覧ページを表示する
   let showPage = vscode.commands.registerCommand(
     'vscodetonotion.notionToConection',
@@ -170,7 +89,7 @@ mdUpdate: false,
         // プロパティを出力
         for (let i = 0; i < keys.length; i++) {
           const key = keys[i];
-          const value = values[i];
+          const value: any = values[i];
           if (key === 'title') {
             mdProperties.push(`${key}: ${getPropertiesRichText(value.title)}`);
           } else if (key === 'description') {
@@ -306,7 +225,7 @@ mdUpdate: false
         { title: '送信しない', isCloseAffordance: false },
         { title: '送信する', isCloseAffordance: true }
       );
-      if (message === undefined && message?.title === '送信しない') {
+      if (message === undefined || message.title === '送信しない') {
         return;
       } else if (message?.title === '送信する') {
         // マークダウンを取得
@@ -329,16 +248,8 @@ mdUpdate: false
         // ページのコンテンツ要素を取得
         const content = markdownToBlocks(dataWithContent.content);
 
-        // ページのデータをkeys:valuesの形式に変換
-        const properties = {};
-
-        // ページのデータをkeys:valuesの形式に変換
-        for (const [key, value] of Object.entries(data)) {
-          properties[key] = value;
-        }
-
         // mdUpdateの値によって更新するか新規作成するかどうか判定
-        if (properties['mdUpdate'] === true) {
+        if (data['mdUpdate'] === true) {
           // 更新する場合
           const testtext = await vscode.window.showInformationMessage(
             `更新します`,
@@ -347,15 +258,15 @@ mdUpdate: false
             }
           );
           // mdUpdateプロパティを削除
-          delete properties['mdUpdate'];
+          delete data['mdUpdate'];
 
           // ページのIDを取得
-          const pageId = properties['pageId'];
+          const pageId = data['pageId'];
 
           // ページを更新
           await updatePage({
             pageId: pageId,
-            data: properties,
+            data: data,
             content: content,
           });
         } else {
@@ -367,8 +278,8 @@ mdUpdate: false
             }
           );
           // mdUpdateプロパティを削除
-          delete properties['mdUpdate'];
-          await createPage({ data: properties, content: content });
+          delete data['mdUpdate'];
+          await createPage({ data: data, content: content });
         }
         vscode.commands.executeCommand('vscodetonotion.refreshEntry');
 
@@ -398,6 +309,5 @@ mdUpdate: false
   context.subscriptions.push(settigns);
   context.subscriptions.push(notionAdd);
   context.subscriptions.push(notionSend);
-  context.subscriptions.push(test);
 }
 export function deactivate() {}

@@ -19,10 +19,6 @@
         "title": "Notion一覧を表示させる"
       },
       {
-        "command": "vscodetonotion.test",
-        "title": "TESTをする"
-      },
-      {
         "command": "vscodetonotion.sendEntry",
         "title": "Notionのページをエディター内容を送信する"
       },

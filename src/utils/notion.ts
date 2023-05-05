@@ -3,18 +3,22 @@ import { Client } from '@notionhq/client';
 import { NotionToMarkdown } from 'notion-to-md';
 import { ListBlockChildrenResponse } from '@notionhq/client/build/src/api-endpoints';
 
+// 設定を取得
 const config = vscode.workspace.getConfiguration('vscodetonotion');
-const api = config.get('api');
-const databaseId = config.get('databaseId');
+let api = config.get('api');
+let databaseId = config.get('databaseId');
 
-export const notion = new Client({
+// apiとdatabaseIdが設定されていない場合はエラーを返す
+export let notion = new Client({
   auth: String(api) as string,
 });
 
+// NotionToMarkdownのインスタンスを作成
 export const n2m = new NotionToMarkdown({ notionClient: notion });
 
+// ページを取得
 export const fetchPages = async ({ title }: { title?: string }) => {
-  const db = String(databaseId);
+  let db = String(databaseId);
   const and: any = [
     {
       property: 'slug',
@@ -41,6 +45,7 @@ export const fetchPages = async ({ title }: { title?: string }) => {
   });
 };
 
+// ブロックを取得
 export const fetchBlocksByPageId = async (pageId: string) => {
   const data = [];
   let cursor: string | undefined = undefined;
@@ -57,20 +62,16 @@ export const fetchBlocksByPageId = async (pageId: string) => {
   return { results: data };
 };
 
+// 全プロパティを取得
 export const retrievePageProperties = async (pageId: any) => {
-  // プロパティを取得
-  const { properties } = await notion.pages.retrieve({ page_id: pageId });
+  const { properties } = (await notion.pages.retrieve({
+    page_id: pageId,
+  })) as any;
 
-  // プロパティの値を取得
   return properties;
 };
 
-export const getPageProperties = async (pageId: any, property: string) => {
-  const properties = await retrievePageProperties(pageId);
-  const propertyValue = properties[property];
-  return propertyValue;
-};
-
+// ページの削除
 export const archivePage = async (pageId: string) => {
   await notion.pages.update({
     page_id: pageId,
@@ -78,6 +79,7 @@ export const archivePage = async (pageId: string) => {
   });
 };
 
+// ページを更新
 export const updatePage = async ({
   pageId,
   data,
@@ -144,6 +146,7 @@ export const updatePage = async ({
   }
 };
 
+// ページを新規で作成
 export const createPage = async ({
   data,
   content,
@@ -152,7 +155,7 @@ export const createPage = async ({
   content: any;
 }) => {
   const failsPages = [];
-  const db = String(databaseId);
+  let db = String(databaseId);
   try {
     const create = await notion.pages.create({
       parent: { database_id: db },
