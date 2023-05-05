@@ -229,6 +229,21 @@ mdUpdate: false,
           modal: true,
         }
       );
+
+      // ページのプロパティを作成
+      const properties = `---
+tags:
+category: 未分類
+description:
+title: 新規ページ
+mdUpdate: false
+---`;
+      // マークダウンをエディタに表示
+      const document = await vscode.workspace.openTextDocument({
+        language: 'markdown',
+        content: properties,
+      });
+      await vscode.window.showTextDocument(document, { preview: false });
     }
   );
 
@@ -355,6 +370,14 @@ mdUpdate: false,
           delete properties['mdUpdate'];
           await createPage({ data: properties, content: content });
         }
+        vscode.commands.executeCommand('vscodetonotion.refreshEntry');
+
+        const testtext = await vscode.window.showInformationMessage(
+          `更新されました。`,
+          {
+            modal: true,
+          }
+        );
       }
     }
   );
