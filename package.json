@@ -19,6 +19,10 @@
         "title": "Notion一覧を表示させる"
       },
       {
+        "command": "vscodetonotion.test",
+        "title": "TESTをする"
+      },
+      {
         "command": "vscodetonotion.settings",
         "title": "設定ファイルを開く"
       },

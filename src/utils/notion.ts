@@ -57,6 +57,20 @@ export const fetchBlocksByPageId = async (pageId: string) => {
   return { results: data };
 };
 
+export const retrievePageProperties = async (pageId: any) => {
+  // プロパティを取得
+  const { properties } = await notion.pages.retrieve({ page_id: pageId });
+
+  // プロパティの値を取得
+  return properties;
+};
+
+export const getPageProperties = async (pageId: any, property: string) => {
+  const properties = await retrievePageProperties(pageId);
+  const propertyValue = properties[property];
+  return propertyValue;
+};
+
 export const archivePage = async (pageId: string) => {
   await notion.pages.update({
     page_id: pageId,

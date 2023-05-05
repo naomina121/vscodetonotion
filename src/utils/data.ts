@@ -1,4 +1,5 @@
 import { PageType, RichTextType } from '../types';
+import { retrievePageProperties } from './notion';
 
 // 記事タイトルの設定
 export const postTitle = (page: PageType) => {
