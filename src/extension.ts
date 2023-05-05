@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { fetchPages } from './utils/notion';
+import { archivePage, fetchPages } from './utils/notion';
 import { postTitle } from './utils/data';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -15,37 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
       );
       // ページ一覧を表示させる。
-      const { results: pages } = await fetchPages();
-
-      const element = 'package-openPages';
-
-      const treeView = await vscode.window.createTreeView(element, {
-        canSelectMany: true,
-        treeDataProvider: {
-          getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
-            return element;
-          },
-
-          getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
-            return pages.map(
-              (page: any) => new vscode.TreeItem(postTitle(page))
-            );
-          },
-        },
-      });
-
-      const showDisposable = vscode.commands.registerCommand(
-        'vscodetonotion.show',
-        (element: vscode.TreeItem) => {
-          if (element) {
-            vscode.window.showInformationMessage(`エディタが立ち上がります。`, {
-              modal: true,
-            });
-          }
-        }
-      );
-
-      context.subscriptions.push(showDisposable);
+      vscode.commands.executeCommand('vscodetonotion.refreshEntry');
     }
   );
 
@@ -54,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
     'vscodetonotion.refreshEntry',
     async () => {
       // ページ一覧を表示させる。
-      const { results: pages } = await fetchPages();
+      const { results: pages } = await fetchPages({});
 
       const element = 'package-openPages';
 
@@ -72,19 +42,21 @@ export function activate(context: vscode.ExtensionContext) {
           },
         },
       });
+    }
+  );
 
-      const showDisposable = vscode.commands.registerCommand(
-        'vscodetonotion.show',
-        (element: vscode.TreeItem) => {
-          if (element) {
-            vscode.window.showInformationMessage(`エディタが立ち上がります。`, {
-              modal: true,
-            });
-          }
-        }
-      );
-
-      context.subscriptions.push(showDisposable);
+  // Notionのページを編集する
+  let notionEdit = vscode.commands.registerCommand(
+    'vscodetonotion.editEntry',
+    async (element: vscode.TreeItem) => {
+      if (element) {
+        vscode.window.showInformationMessage(`エディタが立ち上がります。`, {
+          modal: true,
+        });
+        // ページのタイトルを取得
+        const pageTitle = element.label;
+        const { results: pages } = await fetchPages({});
+      }
     }
   );
 
@@ -97,7 +69,48 @@ export function activate(context: vscode.ExtensionContext) {
   // Notionのページを削除する
   let notionDelete = vscode.commands.registerCommand(
     'vscodetonotion.deleteEntry',
-    async () => {}
+    async (element: vscode.TreeItem) => {
+      if (element) {
+        const message = await vscode.window.showInformationMessage(
+          `${element.label}を削除しますが、本当に、よろしいですか？`,
+          { modal: true },
+
+          { title: '削除しない', isCloseAffordance: false },
+          { title: '削除する', isCloseAffordance: true }
+        );
+
+        if (message?.title === '削除しない' || message === undefined) {
+          // "削除しない"をクリックした場合
+          const test = await vscode.window.showInformationMessage(
+            '削除しませんでした',
+            {
+              modal: true,
+            }
+          );
+        } else if (message.title === '削除する' || message === undefined) {
+          // "削除する"をクリックした場合
+          // ページのタイトルを取得
+          const pageTitle = element.label;
+          // ページタイトルからページIDを取得
+          const { results: pages } = await fetchPages({
+            title: String(pageTitle),
+          });
+          // ページIDを取得
+          const pageId = pages[0].id;
+          // ページを削除
+          await archivePage(pageId);
+          // ページを更新
+          vscode.commands.executeCommand('vscodetonotion.refreshEntry');
+          // メッセージを表示
+          const test = await vscode.window.showInformationMessage(
+            '該当のページを削除しました',
+            {
+              modal: true,
+            }
+          );
+        }
+      }
+    }
   );
 
   // Notionの設定ページを表示する
@@ -112,6 +125,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(showPage);
+  context.subscriptions.push(notionEdit);
   context.subscriptions.push(settigns);
 }
 export function deactivate() {}

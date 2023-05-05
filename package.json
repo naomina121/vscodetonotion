@@ -15,10 +15,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "vscodetonotion.show",
-        "title": "この項目をエディタで開く"
-      },
-      {
         "command": "vscodetonotion.notionToConection",
         "title": "Notion一覧を表示させる"
       },
@@ -28,7 +24,11 @@
       },
       {
         "command": "vscodetonotion.deleteEntry",
-        "title": "削除する"
+        "title": "このファイルを削除する",
+        "icon": {
+          "light": "resources/light/delete.svg",
+          "dark": "resources/dark/delete.svg"
+        }
       },
       {
         "command": "vscodetonotion.addEntry",
@@ -73,28 +73,26 @@
     "menus": {
       "view/title": [
         {
-          "command": "vscodetonotion.refreshEntry",
+          "command": "vscodetonotion.addEntry",
           "when": "view == package-openPages",
           "group": "navigation"
         },
         {
-          "command": "vscodetonotion.addEntry",
-          "when": "view == package-openPages"
+          "command": "vscodetonotion.refreshEntry",
+          "when": "view == package-openPages",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "vscodetonotion.show",
-          "when": "view == package-openPages"
-        },
-        {
           "command": "vscodetonotion.editEntry",
-          "when": "view == package-openPages && viewItem == dependency",
+          "when": "view == package-openPages",
           "group": "inline"
         },
         {
           "command": "vscodetonotion.deleteEntry",
-          "when": "view == package-openPages && viewItem == dependency"
+          "when": "view == package-openPages",
+          "group": "inline"
         }
       ]
     },
@@ -152,6 +150,8 @@
     "webpack-cli": "^5.0.2"
   },
   "dependencies": {
+    "@tryfabric/martian": "^1.2.4",
+    "notion-to-md": "^2.5.6",
     "rimraf": "^5.0.0"
   }
 }
