@@ -2,7 +2,7 @@
   "name": "vscodetonotion",
   "displayName": "VScodeToNotion",
   "description": "VSCodeからNotionを直接編集できる拡張機能",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "naomina121",
   "icon": "resources/notion.png",
   "repository": {
@@ -116,7 +116,7 @@
       {
         "view": "package-openPages",
         "contents": "まず、設定画面を開いて、NotionのAPIと使用するデーターベースIDを入力します。\n [設定画面を開く](command:vscodetonotion.settings)\nNotionとの接続設定がお済みの方は、Notions一覧ページを開いてください \n [Notionのページ一覧を開く](command:vscodetonotion.notionToConection)",
-        "when": "workbenchState == empty"
+        "when": "!viewlet:package-openPages.visible"
       }
     ],
     "viewsContainers": {

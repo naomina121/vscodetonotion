@@ -32,7 +32,7 @@ export const fetchPages = async ({
   title?: string;
   property?: string;
 }) => {
-  const db = String(databaseId);
+  let db = String(databaseId);
   const and: any = [];
 
   if (title && property) {
@@ -170,7 +170,7 @@ export const createPage = async ({
   allProperty: any;
 }) => {
   const failsPages = [];
-  const db = String(databaseId);
+  let db = String(databaseId);
   try {
     // ページのプロパティを更新
     const properties = await convertProperty(data, allProperty);
