@@ -1,9 +1,14 @@
 {
   "name": "vscodetonotion",
   "displayName": "VScodeToNotion",
-  "description": "VSCodeからNotion直接編集できる拡張機能",
+  "description": "VSCodeからNotionを直接編集できる拡張機能",
   "version": "0.0.1",
-  "publisher": "nao",
+  "publisher": "naomina121",
+  "icon": "resources/notion.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naomina121/vscodetonotion"
+  },
   "engines": {
     "vscode": "^1.77.0"
   },
