@@ -4,7 +4,7 @@
 
 このプラグインは、VSCode から NotionAPI を通して、新規投稿、編集、削除をするプラグインです。
 
-\!\[vscodetonotion のスクリーンショット画像\]\(resources/vscodetonotion.png\)
+![vscodetonotion](https://user-images.githubusercontent.com/42175852/236614882-7a7af10d-9d46-4978-bcd5-c3c4fab7bb4e.png)
 
 ## 使い方
 
@@ -19,15 +19,15 @@
 
 次に、拡張機能を有効にしたら、サイドバーに Notion のアイコンが追加されるので「設定画面を開く」から先ほど設定した取得した NotionAPI キーとページ ID をそれぞれ設定してください。
 
-\!\[設定画面の説明\]\(resources/setting.png\)
+![setting](https://user-images.githubusercontent.com/42175852/236614618-9c63e26b-cb1a-41c0-a37f-a0f53221dac7.png)
 
 その次に、「Notion のページ一覧を開く」を選択すると下記のような画面になります。
 
-\!\[設定画面の説明\]\(resources/pages.png\)
+![pages](https://user-images.githubusercontent.com/42175852/236614615-cd358e05-6d3d-4375-a61e-20ed69af30fb.png)
 
 左側が Notion のデータベースを読み込んだ状態になります。
 
-\!\[項目にフォーカスした時の説明\]\(resources/edit.png\)
+![edit](https://user-images.githubusercontent.com/42175852/236614606-834e954b-b794-4fdb-ac8d-9d8241f51e7a.png)
 
 左側の項目にフォーカスすると、鉛筆マークが出ますが、これは、Notion にページを更新したい時に使用します。
 ゴミ箱マークは削除です。
@@ -41,13 +41,13 @@
 エディタで編集を終えたら、エディタ画面で右クリックを押します。
 すると下記のようになります。
 
-\!\[データ送信\]\(resources/update.png\)
+![update](https://user-images.githubusercontent.com/42175852/236614619-5733cf6d-e4bf-4067-8a71-fb86441ae3a9.png)
 
 「エディター内容を Notion のデータベースに送信する」を選択するとデータベースにデータが送信されます。
 
 ## 注意事項
 
-\!\[メタ情報\]\(resources/meta.png\)
+![meta](https://user-images.githubusercontent.com/42175852/236614608-2633d212-780f-4777-8db8-9d7a09006fdc.png)
 
 エディタで編集する時に、上記のように、`---`で囲まれている箇所がありますが、こちらはメタ情報として使用しています。
 
@@ -79,7 +79,7 @@
 - [Markdown で書いたノートを Notion のデータベースに移行する](https://zenn.dev/cizneeh/articles/markdown-to-notion-db)
 - [VSCode Extensions(拡張機能) 自作入門 〜VSCode におみくじ機能を追加する〜](https://qiita.com/HelloRusk/items/073b58c1605de224e67e)
 - [gray-matter](https://www.npmjs.com/package/gray-matter#optionslanguage)
-- [[@tryfabric/martian](https://www.npmjs.com/package/@tryfabric/martian)
+- [@tryfabric/martian](https://www.npmjs.com/package/@tryfabric/martian)
 - [notion-to-md](https://www.npmjs.com/package/notion-to-md)
 
 **Thanks!**
