@@ -2,35 +2,42 @@ import * as vscode from 'vscode';
 import { Client } from '@notionhq/client';
 import { NotionToMarkdown } from 'notion-to-md';
 import { ListBlockChildrenResponse } from '@notionhq/client/build/src/api-endpoints';
+import { getPropertiesRichText } from './data';
+import { convertProperty } from './mdToBlocks';
 
 // 設定を取得
 const config = vscode.workspace.getConfiguration('vscodetonotion');
 let api = config.get('api');
 let databaseId = config.get('databaseId');
 
-// apiとdatabaseIdが設定されていない場合はエラーを返す
 export let notion = new Client({
   auth: String(api) as string,
 });
+
+// apiとdatabaseIdが設定されていない場合はエラーを返す
+if (!api || !databaseId) {
+  vscode.window.showErrorMessage(
+    'NotionのAPIキーとデータベースIDを設定してください。'
+  );
+}
 
 // NotionToMarkdownのインスタンスを作成
 export const n2m = new NotionToMarkdown({ notionClient: notion });
 
 // ページを取得
-export const fetchPages = async ({ title }: { title?: string }) => {
-  let db = String(databaseId);
-  const and: any = [
-    {
-      property: 'slug',
-      rich_text: {
-        is_not_empty: true,
-      },
-    },
-  ];
+export const fetchPages = async ({
+  title,
+  property,
+}: {
+  title?: string;
+  property?: string;
+}) => {
+  const db = String(databaseId);
+  const and: any = [];
 
-  if (title) {
+  if (title && property) {
     and.push({
-      property: 'title',
+      property: property,
       title: {
         equals: title,
       },
@@ -71,6 +78,29 @@ export const retrievePageProperties = async (pageId: any) => {
   return properties;
 };
 
+// ページIDからタイトルプロパティを取得
+export const getPropertiesTitle = async (pageId: any) => {
+  const properties = await retrievePageProperties(pageId);
+
+  const keys = Object.keys(properties);
+  const values = Object.values(properties);
+
+  const titles = [];
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const value: any = values[i];
+    if (value.title) {
+      titles.push({
+        key: key,
+        value: getPropertiesRichText(value.title),
+      });
+    }
+  }
+
+  return titles[0];
+};
+
 // ページの削除
 export const archivePage = async (pageId: string) => {
   await notion.pages.update({
@@ -84,11 +114,14 @@ export const updatePage = async ({
   pageId,
   data,
   content,
+  allProperty,
 }: {
   pageId: string;
   data: any;
   content: any;
+  allProperty: any;
 }) => {
+  const failsPages = [];
   try {
     // ブロックを取得
     const { results: blocks } = await fetchBlocksByPageId(pageId);
@@ -109,89 +142,49 @@ export const updatePage = async ({
       children: content,
     });
 
+    // ページのプロパティ
+    const properties = await convertProperty(data, allProperty);
+
+    console.log(properties);
+
     // ページのプロパティを更新
-    await notion.pages.update({
+    const update = await notion.pages.update({
       page_id: pageId,
-      properties: {
-        title: {
-          title: data.title
-            ? [{ text: { content: data.title } }]
-            : [{ text: { content: 'タイトルなし' } }],
-        },
-        tags: {
-          multi_select: data.tags
-            ? data.tags.map((tag: string) => ({ name: tag }))
-            : [],
-        },
-        category: {
-          select: data.category ? { name: data.category } : { name: '未分類' },
-        },
-        description: {
-          rich_text: data.description
-            ? [{ text: { content: data.description } }]
-            : [{ text: { content: '説明なし' } }],
-        },
-        isPublic: {
-          checkbox: data.isPublic ? data.isPublic : false,
-        },
-        updateAt: {
-          date: data.updateAt
-            ? { start: data.updateAt }
-            : { start: new Date() },
-        },
-      },
+      properties: properties,
     });
   } catch (e) {
     console.error(e);
+    failsPages.push(data.title);
   }
+  console.log(`ページ作成に失敗しました：${failsPages[0]}`);
 };
 
 // ページを新規で作成
 export const createPage = async ({
   data,
   content,
+  allProperty,
 }: {
   data: any;
   content: any;
+  allProperty: any;
 }) => {
   const failsPages = [];
-  let db = String(databaseId);
+  const db = String(databaseId);
   try {
+    // ページのプロパティを更新
+    const properties = await convertProperty(data, allProperty);
+
     const create = await notion.pages.create({
       parent: { database_id: db },
-      properties: {
-        title: {
-          title: data.title
-            ? [{ text: { content: data.title } }]
-            : [{ text: { content: 'タイトルなし' } }],
-        },
-        tags: {
-          multi_select: data.tags
-            ? data.tags.map((tag: string) => ({ name: tag }))
-            : [],
-        },
-        category: {
-          select: data.category ? { name: data.category } : { name: '未分類' },
-        },
-        description: {
-          rich_text: data.description
-            ? [{ text: { content: data.description } }]
-            : [{ text: { content: '説明なし' } }],
-        },
-        isPublic: {
-          checkbox: data.isPublic ? data.isPublic : false,
-        },
-        updateAt: {
-          date: data.updateAt
-            ? { start: data.updateAt }
-            : { start: new Date() },
-        },
-      },
+      properties: properties,
       children: content,
     });
+
+    console.log(properties);
   } catch (e) {
     console.error(e);
     failsPages.push(data.title);
   }
-  console.log('ページ作成に失敗しました：${failsPages[0]}');
+  console.log(`ページ作成に失敗しました：${failsPages[0]}`);
 };

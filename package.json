@@ -24,7 +24,7 @@
       },
       {
         "command": "vscodetonotion.settings",
-        "title": "設定ファイルを開く"
+        "title": "Notionの設定ファイルを開く"
       },
       {
         "command": "vscodetonotion.deleteEntry",
@@ -70,7 +70,7 @@
         "vscodetonotion.databaseId": {
           "type": "string",
           "default": "",
-          "description": "データーベースIDを設定してください"
+          "description": "ページIDを設定してください"
         }
       }
     },

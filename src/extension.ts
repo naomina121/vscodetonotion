@@ -4,22 +4,28 @@ import {
   archivePage,
   createPage,
   fetchPages,
+  getPropertiesTitle,
   n2m,
   retrievePageProperties,
   updatePage,
 } from './utils/notion';
-import { getPropertiesRichText, postTitle } from './utils/data';
+import { convertPropertyToMarkdown, getPropertiesRichText } from './utils/data';
 import { mdToBlocks } from './utils/mdToBlocks';
 import { markdownToBlocks } from '@tryfabric/martian';
 
 export function activate(context: vscode.ExtensionContext) {
+  // Title のプロパティ名を取得するための変数
+  let titleProperty: '';
+
+  // Title以外のプロパティ名とタイプを取得するための変数
+  let allProperty: any[] = [];
+
   // Notion一覧ページを表示する
   let showPage = vscode.commands.registerCommand(
     'vscodetonotion.notionToConection',
     async () => {
-      // メッセージを表示
-      const message = vscode.window.showInformationMessage(
-        'Notion一覧を開きます',
+      const messege = await vscode.window.showInformationMessage(
+        `Notionのページを表示します`,
         {
           modal: true,
         }
@@ -33,8 +39,36 @@ export function activate(context: vscode.ExtensionContext) {
   let refresh = vscode.commands.registerCommand(
     'vscodetonotion.refreshEntry',
     async () => {
+      // 初期化
+      allProperty = [];
       // ページ一覧を表示させる。
       const { results: pages } = await fetchPages({});
+
+      // ページIDから複数のタイトルプロパティを取得
+      const titlesProperties = await Promise.all(
+        pages.map((page: any) => getPropertiesTitle(page.id))
+      );
+
+      // ページのタイトルのプロパティ名を配列に格納
+      const properties = titlesProperties.map((title: any) => title.key);
+
+      // グローバル変数にタイトルのプロパティ名を格納
+      titleProperty = properties[0];
+
+      // 全プロパティを取得
+      const allPropertyis: any = await retrievePageProperties(pages[0].id);
+
+      const keys = Object.keys(allPropertyis);
+      const values = Object.values(allPropertyis);
+
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const value: any = values[i];
+        allProperty.push({
+          type: value.type,
+          property: key,
+        });
+      }
 
       // ツリービューを表示させる。
       const element = 'package-openPages';
@@ -47,8 +81,8 @@ export function activate(context: vscode.ExtensionContext) {
           },
 
           getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
-            return pages.map(
-              (page: any) => new vscode.TreeItem(postTitle(page))
+            return titlesProperties.map(
+              (title: any) => new vscode.TreeItem(title.value)
             );
           },
         },
@@ -61,14 +95,17 @@ export function activate(context: vscode.ExtensionContext) {
     'vscodetonotion.editEntry',
     async (element: vscode.TreeItem) => {
       if (element) {
-        vscode.window.showInformationMessage(`エディタが立ち上がります。`, {
-          modal: true,
-        });
-
+        const messege = await vscode.window.showInformationMessage(
+          `エディタが立ち上がります。`,
+          {
+            modal: true,
+          }
+        );
         // ページのタイトルを取得
         const pageTitle = element.label;
         const { results: pages } = await fetchPages({
           title: String(pageTitle),
+          property: titleProperty,
         });
 
         // ページIDを取得
@@ -77,38 +114,17 @@ export function activate(context: vscode.ExtensionContext) {
         // ページのプロパティを取得
         const properties = await retrievePageProperties(pageId);
 
-        // ページのキーを配列に格納
-        const keys = Object.keys(properties);
-
-        // ページの値を配列に格納
-        const values = Object.values(properties);
-
         // ページのプロパティをMarkdownのコメントアウトに変換
         const mdProperties = ['---'];
 
-        // プロパティを出力
-        for (let i = 0; i < keys.length; i++) {
-          const key = keys[i];
-          const value: any = values[i];
-          if (key === 'title') {
-            mdProperties.push(`${key}: ${getPropertiesRichText(value.title)}`);
-          } else if (key === 'description') {
-            mdProperties.push(
-              `${key}: ${getPropertiesRichText(value.rich_text)}`
-            );
-          } else if (key === 'category') {
-            mdProperties.push(`${key}: ${value.select.name}`);
-          } else if (key === 'tags') {
-            // タグを配列に格納
-            const tags = [];
-            for (const tag of value.multi_select) {
-              tags.push(tag.name);
-            }
-            mdProperties.push(`${key}: ${tags.join(', ')}`);
-          } else {
-            continue;
+        // プロパティをMarkdownに変換
+        for (const [key, value] of Object.entries(properties)) {
+          const mdProperty = convertPropertyToMarkdown(key, value);
+          if (mdProperty !== null) {
+            mdProperties.push(mdProperty);
           }
         }
+
         // ページIDを含める
         mdProperties.push(`pageId: ${pageId}`);
 
@@ -150,13 +166,21 @@ export function activate(context: vscode.ExtensionContext) {
       );
 
       // ページのプロパティを作成
-      const properties = `---
-tags:
-category: 未分類
-description:
-title: 新規ページ
-mdUpdate: false
----`;
+      const mdProperties = ['---'];
+
+      // プロパティをMarkdownに変換
+      for (let i = 0; i < allProperty.length; i++) {
+        const properties = allProperty[i].property;
+        const value = '';
+        mdProperties.push(`${properties}: ${value}`);
+      }
+
+      mdProperties.push('mdUpdate: false');
+      mdProperties.push('---');
+
+      // ページのプロパティをMarkdownのコメントアウトに変換
+      const properties = mdProperties.join('\n');
+
       // マークダウンをエディタに表示
       const document = await vscode.workspace.openTextDocument({
         language: 'markdown',
@@ -181,12 +205,7 @@ mdUpdate: false
 
         if (message?.title === '削除しない' || message === undefined) {
           // "削除しない"をクリックした場合
-          const test = await vscode.window.showInformationMessage(
-            '削除しませんでした',
-            {
-              modal: true,
-            }
-          );
+          return;
         } else if (message.title === '削除する' || message === undefined) {
           // "削除する"をクリックした場合
           // ページのタイトルを取得
@@ -194,6 +213,7 @@ mdUpdate: false
           // ページタイトルからページIDを取得
           const { results: pages } = await fetchPages({
             title: String(pageTitle),
+            property: titleProperty,
           });
           // ページIDを取得
           const pageId = pages[0].id;
@@ -232,13 +252,6 @@ mdUpdate: false
         const editor = await vscode.window.activeTextEditor;
         const markdown = await editor?.document.getText();
 
-        const message = await vscode.window.showInformationMessage(
-          `properties:${markdown}`,
-          {
-            modal: true,
-          }
-        );
-
         // マークダウンの中身をdata要素とcontent要素に分割
         const dataWithContent = await mdToBlocks(String(markdown));
 
@@ -251,39 +264,34 @@ mdUpdate: false
         // mdUpdateの値によって更新するか新規作成するかどうか判定
         if (data['mdUpdate'] === true) {
           // 更新する場合
-          const testtext = await vscode.window.showInformationMessage(
-            `更新します`,
-            {
-              modal: true,
-            }
-          );
           // mdUpdateプロパティを削除
           delete data['mdUpdate'];
 
           // ページのIDを取得
           const pageId = data['pageId'];
+          delete data['pageId'];
 
           // ページを更新
           await updatePage({
             pageId: pageId,
             data: data,
             content: content,
+            allProperty: allProperty,
           });
         } else {
           // 新規作成する場合
-          const testtext = await vscode.window.showInformationMessage(
-            `新規投稿します`,
-            {
-              modal: true,
-            }
-          );
           // mdUpdateプロパティを削除
           delete data['mdUpdate'];
-          await createPage({ data: data, content: content });
+          // ページを作成
+          await createPage({
+            data: data,
+            content: content,
+            allProperty: allProperty,
+          });
         }
         vscode.commands.executeCommand('vscodetonotion.refreshEntry');
 
-        const testtext = await vscode.window.showInformationMessage(
+        const publishedText = await vscode.window.showInformationMessage(
           `更新されました。`,
           {
             modal: true,
