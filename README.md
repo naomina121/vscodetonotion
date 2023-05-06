@@ -1,71 +1,86 @@
-# vscodetonotion README
+# VSCodeToNotionとは？
 
-This is the README for your extension "vscodetonotion". After writing up a brief description, we recommend including the following sections.
+> 現在、開発途中のVScodeの拡張機能です。
 
-## Features
+このプラグインは、VSCodeからNotionAPIを通して、新規投稿、編集、削除をするプラグインです。
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+\!\[vscodetonotionのスクリーンショット画像\]\(resources/vscodetonotion.png\)
 
-For example if there is an image subfolder under your extension project workspace:
+## 使い方
 
-\!\[feature X\]\(images/feature-x.png\)
+まず、準備として、新規作成のデータベースを用意し、NotionAPIキーの取得と、ページIDを取得しましょう。
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+サンプルの [データベース](https://naomina.notion.site/b468c12581124c8188821523a18f24ad?v=796a38918d3d47068091f1c540f4d5d5)をご用意しました。動作確認に複製してご自由にお使いください。
 
-## Requirements
+1. [Notion Developer Portal](https://www.notion.com/my-integrations)にアクセスし、新しいインテグレーションを作成します。
+2. インテグレーションを作成したら、NotionAPIキーを取得します。（大切な情報なので厳重に保管してください）
+3. 先ほど複製したNotionのページにアクセスし、右上の三点リーダーをクリックしインテグレーションをコネクトの追加から追加します。（インテグレーションが反映されるまでに時間がかかる場合もあります。）
+4. ページIDを取得するには、ページの共有からリンクをコピーします。「https://notion.so/(NotionPageID)/?v=ランダム文字列」
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+次に、拡張機能を有効にしたら、サイドバーにNotionのアイコンが追加されるので「設定画面を開く」から先ほど設定した取得したNotionAPIキーとページIDをそれぞれ設定してください。
 
-## Extension Settings
+\!\[設定画面の説明\]\(resources/setting.png\)
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+その次に、「Notionのページ一覧を開く」を選択すると下記のような画面になります。
 
-For example:
+\!\[設定画面の説明\]\(resources/pages.png\)
 
-This extension contributes the following settings:
+左側がNotionのデータベースを読み込んだ状態になります。
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+\!\[項目にフォーカスした時の説明\]\(resources/edit.png\)
 
-## Known Issues
+左側の項目にフォーカスすると、鉛筆マークが出ますが、これは、Notionにページを更新したい時に使用します。
+ゴミ箱マークは削除です。
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+右上のノートのマークは、新規でNotionに投稿したいときに使います。
+
+更新や新規でデータを投稿する時、エディタが立ち上がりますが、保存をしなくてもデータは送信ができます。
+
+### データを送信したい時
+
+エディタで編集を終えたら、エディタ画面で右クリックを押します。
+すると下記のようになります。
+
+\!\[データ送信\]\(resources/update.png\)
+
+「エディター内容をNotionのデータベースに送信する」を選択するとデータベースにデータが送信されます。
+
+
+## 注意事項
+
+\!\[メタ情報\]\(resources/meta.png\)
+
+エディタで編集する時に、上記のように、`---`で囲まれている箇所がありますが、こちらはメタ情報として使用しています。
+
+`pageID`や`mdUpdate`の情報は更新するときに使用しています。
+
+削除してしまうと更新ができなくなってしまうため削除なさらないようにお願いします。
+
+**ページのタイトル属性に関しては、新規で作成する際は必ず名前をつけてください。**
+
+タイトルがない場合は、新規投稿ができません。
+
+新規投稿画面に関しては、データベースに設定したプロパティをメタ情報に設定していますが、空白でも大丈夫です。
+
+メタ情報のプロパティの中には、Notionでご使用されている関数などに応じて反映させるためには空白である必要があります。
+
+新規投稿する際にエディタからメタ情報が適切に取れてない場合は、更新ボタンを押して開き直してみたりすると直ります。
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### "0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
+   - カスタムプロパティにて新規投稿、更新できるように調整 (2023/5/6)
+  
 ---
 
-## Following extension guidelines
+## 参考サイトやお借りした素材サイト
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+* [ICONS8](https://icons8.jp)
+* [Markdownで書いたノートをNotionのデータベースに移行する](https://zenn.dev/cizneeh/articles/markdown-to-notion-db)
+* [VSCode Extensions(拡張機能) 自作入門 〜VSCodeにおみくじ機能を追加する〜](https://qiita.com/HelloRusk/items/073b58c1605de224e67e)
+* [gray-matter](https://www.npmjs.com/package/gray-matter#optionslanguage)
+* [@tryfabric/martian]([@tryfabric/martian](https://www.npmjs.com/package/@tryfabric/martian))
+* [notion-to-md](https://www.npmjs.com/package/notion-to-md)
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Thanks!**

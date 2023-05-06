@@ -20,7 +20,7 @@
       },
       {
         "command": "vscodetonotion.sendEntry",
-        "title": "Notionのページをエディター内容を送信する"
+        "title": "エディター内容をNotionのデータベースに送信する"
       },
       {
         "command": "vscodetonotion.settings",
