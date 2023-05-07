@@ -2,7 +2,7 @@
   "name": "vscodetonotion",
   "displayName": "VScodeToNotion",
   "description": "VSCodeからNotionを直接編集できる拡張機能",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "naomina121",
   "icon": "resources/notion.png",
   "repository": {

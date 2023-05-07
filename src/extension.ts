@@ -6,12 +6,14 @@ import {
   fetchPages,
   getPropertiesTitle,
   n2m,
+  openPreview,
   retrievePageProperties,
   updatePage,
 } from './utils/notion';
-import { convertPropertyToMarkdown, getPropertiesRichText } from './utils/data';
+import { convertPropertyToMarkdown } from './utils/data';
 import { mdToBlocks } from './utils/mdToBlocks';
 import { markdownToBlocks } from '@tryfabric/martian';
+import { config } from 'process';
 
 export function activate(context: vscode.ExtensionContext) {
   // Title のプロパティ名を取得するための変数
@@ -41,25 +43,38 @@ export function activate(context: vscode.ExtensionContext) {
     async () => {
       // 初期化
       allProperty = [];
+      titleProperty = '';
+
       // ページ一覧を表示させる。
-      const { results: pages } = await fetchPages({});
+      let { results: pages } = await fetchPages({});
+
+      // pagesが空の場合はエラーを返す
+      if (pages.length === 0) {
+        const messege = await vscode.window.showErrorMessage(
+          `Notionのページが見つかりませんでした。`,
+          {
+            modal: true,
+          }
+        );
+        return;
+      }
 
       // ページIDから複数のタイトルプロパティを取得
-      const titlesProperties = await Promise.all(
+      let titlesProperties = await Promise.all(
         pages.map((page: any) => getPropertiesTitle(page.id))
       );
 
       // ページのタイトルのプロパティ名を配列に格納
-      const properties = titlesProperties.map((title: any) => title.key);
+      let properties = titlesProperties.map((title: any) => title.key);
 
       // グローバル変数にタイトルのプロパティ名を格納
       titleProperty = properties[0];
 
       // 全プロパティを取得
-      const allPropertyis: any = await retrievePageProperties(pages[0].id);
+      let allPropertyis: any = await retrievePageProperties(pages[0].id);
 
-      const keys = Object.keys(allPropertyis);
-      const values = Object.values(allPropertyis);
+      let keys = Object.keys(allPropertyis);
+      let values = Object.values(allPropertyis);
 
       for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
@@ -73,7 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
       // ツリービューを表示させる。
       const element = 'package-openPages';
 
-      const treeView = vscode.window.createTreeView(element, {
+      let treeView = vscode.window.createTreeView(element, {
         canSelectMany: true,
         treeDataProvider: {
           getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
@@ -150,6 +165,8 @@ export function activate(context: vscode.ExtensionContext) {
           content: markdownWithProperties,
         });
         await vscode.window.showTextDocument(document, { preview: false });
+        // Notionのプレビュー画面を表示
+        await openPreview(pageId);
       }
     }
   );
@@ -187,6 +204,8 @@ export function activate(context: vscode.ExtensionContext) {
         content: properties,
       });
       await vscode.window.showTextDocument(document, { preview: false });
+      // Notionのプレビュー画面を表示
+      await openPreview();
     }
   );
 
@@ -312,6 +331,45 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // 設定が変更されたときに呼び出される関数
+  async function onDidChangeConfiguration(event: any) {
+    const updateMessage = '設定が更新されました。再読み込みしますか？';
+
+    // API設定が変更された場合の処理
+    if (event.affectsConfiguration('vscodetonotion.api')) {
+      // 更新するかどうか
+      const selection = await vscode.window.showInformationMessage(
+        updateMessage,
+        'はい',
+        'いいえ'
+      );
+      if (selection === 'はい') {
+        // 更新処理を実行する
+        vscode.commands.executeCommand('workbench.action.reloadWindow');
+      }
+    }
+    // データベースID設定が変更された場合の処理
+    else if (event.affectsConfiguration('vscodetonotion.databaseId')) {
+      // 更新するかどうか
+      const selection = await vscode.window.showInformationMessage(
+        updateMessage,
+        'はい',
+        'いいえ'
+      );
+      if (selection === 'はい') {
+        // 更新処理を実行する
+        vscode.commands.executeCommand('workbench.action.reloadWindow');
+      }
+    }
+  }
+
+  // 設定変更イベントを監視する
+  let disposable = vscode.workspace.onDidChangeConfiguration(
+    onDidChangeConfiguration
+  );
+
+  // ディスポーザブルを登録する
+  context.subscriptions.push(disposable);
   context.subscriptions.push(showPage);
   context.subscriptions.push(notionEdit);
   context.subscriptions.push(settigns);

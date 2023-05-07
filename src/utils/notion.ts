@@ -10,16 +10,9 @@ const config = vscode.workspace.getConfiguration('vscodetonotion');
 let api = config.get('api');
 let databaseId = config.get('databaseId');
 
-export let notion = new Client({
+export const notion = new Client({
   auth: String(api) as string,
 });
-
-// apiとdatabaseIdが設定されていない場合はエラーを返す
-if (!api || !databaseId) {
-  vscode.window.showErrorMessage(
-    'NotionのAPIキーとデータベースIDを設定してください。'
-  );
-}
 
 // NotionToMarkdownのインスタンスを作成
 export const n2m = new NotionToMarkdown({ notionClient: notion });
@@ -32,8 +25,18 @@ export const fetchPages = async ({
   title?: string;
   property?: string;
 }) => {
-  let db = String(databaseId);
+  const db = String(databaseId);
   const and: any = [];
+
+  // メッセージを表示
+  vscode.window.showInformationMessage('Notionからデータを取得中...');
+
+  if (api === '' || databaseId === '') {
+    // エラーメッセージを表示
+    vscode.window.showErrorMessage(
+      '設定ファイルが間違っている可能性があります'
+    );
+  }
 
   if (title && property) {
     and.push({
@@ -170,7 +173,7 @@ export const createPage = async ({
   allProperty: any;
 }) => {
   const failsPages = [];
-  let db = String(databaseId);
+  const db = String(databaseId);
   try {
     // ページのプロパティを更新
     const properties = await convertProperty(data, allProperty);
@@ -188,3 +191,37 @@ export const createPage = async ({
   }
   console.log(`ページ作成に失敗しました：${failsPages[0]}`);
 };
+
+// Notionのプレビュー画面を表示させる。
+export async function openPreview(pageId?: string) {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return;
+  }
+  if (pageId) {
+    const document = editor.document;
+    const selection = editor.selection;
+    const markdown = document.getText(selection);
+
+    // プレビューURLを取得
+    const response: any = await notion.pages.retrieve({ page_id: pageId });
+    const previewUrl = response.url;
+
+    // プレビュー画面をVSCode内に表示
+    try {
+      await vscode.commands.executeCommand(
+        'markdown.showPreviewToSide',
+        vscode.Uri.parse(previewUrl)
+      );
+    } catch (e) {
+      console.error(e);
+    }
+  } else {
+    // markdownのプレビュー画面を表示
+    try {
+      await vscode.commands.executeCommand('markdown.showPreviewToSide');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
