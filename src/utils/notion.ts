@@ -27,7 +27,12 @@ export const fetchPages = async ({
 }) => {
   const db = String(databaseId);
   const and: any = [];
-
+  const sort: any = [
+    {
+      direction: 'ascending',
+      timestamp: 'created_time',
+    },
+  ];
   // メッセージを表示
   vscode.window.showInformationMessage('Notionからデータを取得中...');
 
@@ -47,12 +52,22 @@ export const fetchPages = async ({
     });
   }
 
-  return await notion.databases.query({
-    database_id: db,
-    filter: {
-      and: and,
-    },
-  });
+  const data = [];
+  let cursor: string | undefined = undefined;
+  while (true) {
+    const { results, next_cursor }: any = await notion.databases.query({
+      database_id: db,
+      filter: {
+        and: and,
+      },
+      sorts: sort,
+      start_cursor: cursor,
+    });
+    data.push(...results);
+    if (!next_cursor) break;
+    cursor = next_cursor;
+  }
+  return { results: data };
 };
 
 // ブロックを取得
