@@ -166,7 +166,7 @@ export function activate(context: vscode.ExtensionContext) {
         });
         await vscode.window.showTextDocument(document, { preview: false });
         // Notionのプレビュー画面を表示
-        await openPreview(pageId);
+        await openPreview();
       }
     }
   );

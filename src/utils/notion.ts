@@ -208,35 +208,27 @@ export const createPage = async ({
 };
 
 // Notionのプレビュー画面を表示させる。
-export async function openPreview(pageId?: string) {
+export async function openPreview() {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     return;
   }
-  if (pageId) {
-    const document = editor.document;
-    const selection = editor.selection;
-    const markdown = document.getText(selection);
-
-    // プレビューURLを取得
-    const response: any = await notion.pages.retrieve({ page_id: pageId });
-    const previewUrl = response.url;
-
+  // markdownのプレビュー画面を表示
+  try {
     // プレビュー画面をVSCode内に表示
-    try {
-      await vscode.commands.executeCommand(
-        'markdown.showPreviewToSide',
-        vscode.Uri.parse(previewUrl)
-      );
-    } catch (e) {
-      console.error(e);
-    }
-  } else {
-    // markdownのプレビュー画面を表示
-    try {
-      await vscode.commands.executeCommand('markdown.showPreviewToSide');
-    } catch (e) {
-      console.error(e);
-    }
+    await vscode.commands.executeCommand(
+      'markdown.showPreviewToSide',
+      // プレビュー画面に表示するテキスト
+      editor.document.getText(
+        new vscode.Range(
+          new vscode.Position(0, 0),
+          new vscode.Position(editor.document.lineCount - 1, 0)
+        )
+      )
+    );
+    // プレビューを更新
+    await vscode.commands.executeCommand('markdown.preview.refresh');
+  } catch (e) {
+    console.error(e);
   }
 }

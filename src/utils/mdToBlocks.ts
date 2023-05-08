@@ -1,5 +1,4 @@
 import * as matter from 'gray-matter';
-import { multiSelect } from './data';
 
 // マークダウンをブロックに変換する
 export const mdToBlocks = async (md: string) => {
