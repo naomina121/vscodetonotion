@@ -100,7 +100,9 @@ export const retrievePageProperties = async (pageId: any) => {
 export const getPropertiesTitle = async (pageId: any) => {
   const properties = await retrievePageProperties(pageId);
 
+  // プロパティを配列に変換
   const keys = Object.keys(properties);
+  // プロパティの値を配列に変換
   const values = Object.values(properties);
 
   const titles = [];
@@ -112,6 +114,7 @@ export const getPropertiesTitle = async (pageId: any) => {
       titles.push({
         key: key,
         value: getPropertiesRichText(value.title),
+        pageId: pageId,
       });
     }
   }
@@ -163,8 +166,6 @@ export const updatePage = async ({
     // ページのプロパティ
     const properties = await convertProperty(data, allProperty);
 
-    console.log(properties);
-
     // ページのプロパティを更新
     const update = await notion.pages.update({
       page_id: pageId,
@@ -193,13 +194,13 @@ export const createPage = async ({
     // ページのプロパティを更新
     const properties = await convertProperty(data, allProperty);
 
+    // ページを作成
     const create = await notion.pages.create({
       parent: { database_id: db },
       properties: properties,
       children: content,
     });
-
-    console.log(properties);
+    return create.id;
   } catch (e) {
     console.error(e);
     failsPages.push(data.title);

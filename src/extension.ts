@@ -13,7 +13,6 @@ import {
 import { convertPropertyToMarkdown } from './utils/data';
 import { mdToBlocks } from './utils/mdToBlocks';
 import { markdownToBlocks } from '@tryfabric/martian';
-import { config } from 'process';
 
 export function activate(context: vscode.ExtensionContext) {
   // Title のプロパティ名を取得するための変数
@@ -87,7 +86,6 @@ export function activate(context: vscode.ExtensionContext) {
 
       // ツリービューを表示させる。
       const element = 'package-openPages';
-
       let treeView = vscode.window.createTreeView(element, {
         canSelectMany: true,
         treeDataProvider: {
@@ -95,10 +93,23 @@ export function activate(context: vscode.ExtensionContext) {
             return element;
           },
 
-          getChildren(element?: vscode.TreeItem): vscode.TreeItem[] {
-            return titlesProperties.map(
-              (title: any) => new vscode.TreeItem(title.value)
-            );
+          async getChildren(
+            element?: vscode.TreeItem
+          ): Promise<vscode.TreeItem[]> {
+            const children: vscode.TreeItem[] = [];
+
+            for (let index = 0; index < titlesProperties.length; index++) {
+              const treeItem = new vscode.TreeItem(
+                titlesProperties[index].value,
+                vscode.TreeItemCollapsibleState.None
+              );
+
+              treeItem.iconPath = new vscode.ThemeIcon('file');
+
+              children.push(treeItem);
+            }
+
+            return children;
           },
         },
       });
@@ -167,6 +178,100 @@ export function activate(context: vscode.ExtensionContext) {
         await vscode.window.showTextDocument(document, { preview: false });
         // Notionのプレビュー画面を表示
         await openPreview();
+      } else {
+        vscode.window.showErrorMessage('エラーが発生しました。');
+        return;
+      }
+    }
+  );
+
+  // Notionからマークダウンを更新する
+  let updateMarkdown = vscode.commands.registerCommand(
+    'vscodetonotion.updateMarkdown',
+    async () => {
+      const messege = await vscode.window.showInformationMessage(
+        `Notionからマークダウンを更新します`,
+        {
+          modal: true,
+        },
+        { title: 'はい', isCloseAffordance: false },
+        { title: 'いいえ', isCloseAffordance: false }
+      );
+
+      // 更新するかどうか確認
+      if (messege === undefined || messege.title === 'いいえ') {
+        return;
+      }
+
+      try {
+        // マークダウンを開いているエディタを取得
+        const editor = vscode.window.activeTextEditor;
+
+        // マークダウンを開いているエディタがあるかどうか
+        if (editor) {
+          // マークダウンを開いているエディタのドキュメントを取得
+          const document = editor.document;
+
+          // マークダウンを開いているエディタのドキュメントのテキストを取得
+          const oddMarkdown = document.getText();
+
+          // マークダウンのテキストをデータとコンテンツに変換
+          const dataWithContent = await mdToBlocks(String(oddMarkdown));
+
+          // マークダウンからページIDを取得
+          const pageId = dataWithContent.data.pageId;
+
+          // ページのプロパティを取得
+          const properties = await retrievePageProperties(pageId);
+
+          // ページのプロパティをMarkdownのコメントアウトに変換
+          const mdProperties = ['---'];
+
+          // プロパティをMarkdownに変換
+          for (const [key, value] of Object.entries(properties)) {
+            const mdProperty = convertPropertyToMarkdown(key, value);
+            if (mdProperty !== null) {
+              mdProperties.push(mdProperty);
+            }
+          }
+
+          // ページIDを含める
+          mdProperties.push(`pageId: ${pageId}`);
+
+          // 既存のファイルを更新するかどうか
+          mdProperties.push('mdUpdate: true');
+          mdProperties.push('---');
+
+          // プロパティをMarkdownに変換
+          const mdPropertiesString = mdProperties.join('\n');
+
+          // ブロックを取得
+          const mdblocks = await n2m.pageToMarkdown(pageId);
+
+          // マークダウンに変換
+          const markdown = n2m.toMarkdownString(mdblocks);
+
+          // マークダウンにプロパティを追加
+          const markdownWithProperties = `${mdPropertiesString}\n${markdown}`;
+
+          // oddMarkdownからmarkdownWithPropertiesに上書き
+          const edit = new vscode.WorkspaceEdit();
+          edit.replace(
+            document.uri,
+            new vscode.Range(
+              document.positionAt(0),
+              document.positionAt(oddMarkdown.length)
+            ),
+            markdownWithProperties
+          );
+          vscode.workspace.applyEdit(edit);
+        } else {
+          vscode.window.showErrorMessage('エディタが取得できません');
+          return;
+        }
+      } catch (error) {
+        vscode.window.showErrorMessage('エラーが発生しました。');
+        return;
       }
     }
   );
@@ -269,13 +374,28 @@ export function activate(context: vscode.ExtensionContext) {
       } else if (message?.title === '送信する') {
         // マークダウンを取得
         const editor = await vscode.window.activeTextEditor;
+        // マークダウンの中身を取得
         const markdown = await editor?.document.getText();
+
+        // 取得できなければエラーを表示
+        if (markdown === undefined) {
+          vscode.window.showErrorMessage(
+            'アクティブなエディタが取得できません'
+          );
+          return;
+        }
 
         // マークダウンの中身をdata要素とcontent要素に分割
         const dataWithContent = await mdToBlocks(String(markdown));
 
         // ページのデータ要素を取得
         const data = dataWithContent.data;
+
+        // ページのデータが取得できなかったら
+        if (data === undefined || data['mdUpdate'] === undefined) {
+          vscode.window.showErrorMessage('mdUpdateが取得できませんでした');
+          return;
+        }
 
         // ページのコンテンツ要素を取得
         const content = markdownToBlocks(dataWithContent.content);
@@ -288,25 +408,115 @@ export function activate(context: vscode.ExtensionContext) {
 
           // ページのIDを取得
           const pageId = data['pageId'];
+
+          // pageIDプロパティを取得できなかったらエラーを表示
+          if (pageId === undefined) {
+            vscode.window.showErrorMessage('pageIDが取得できませんでした');
+            return;
+          }
+
           delete data['pageId'];
 
-          // ページを更新
-          await updatePage({
-            pageId: pageId,
-            data: data,
-            content: content,
-            allProperty: allProperty,
-          });
+          try {
+            // ページを更新
+            const update = await updatePage({
+              pageId: pageId,
+              data: data,
+              content: content,
+              allProperty: allProperty,
+            });
+          } catch (e) {
+            vscode.window.showErrorMessage(
+              String(e),
+              'ページを作成できませんでした'
+            );
+            return;
+          }
         } else {
           // 新規作成する場合
           // mdUpdateプロパティを削除
           delete data['mdUpdate'];
-          // ページを作成
-          await createPage({
-            data: data,
-            content: content,
-            allProperty: allProperty,
-          });
+          try {
+            // ページを作成
+            const create = await createPage({
+              data: data,
+              content: content,
+              allProperty: allProperty,
+            });
+
+            // createが取得できなかったらエラーを表示
+            if (create === undefined) {
+              vscode.window.showErrorMessage('ページを作成できませんでした');
+              return;
+            }
+
+            // ページのIDを取得
+            const pageId = create;
+
+            // マークダウンを取得
+            const editor = vscode.window.activeTextEditor;
+
+            if (editor === undefined) {
+              vscode.window.showErrorMessage(
+                'アクティブなエディタが取得できませんでした'
+              );
+              return;
+            }
+
+            // マークダウンを開いているエディタのドキュメントを取得
+            const document = editor.document;
+
+            // マークダウンを開いているエディタのドキュメントのテキストを取得
+            const oddMarkdown = document.getText();
+
+            // ページのプロパティを取得
+            const properties = await retrievePageProperties(pageId);
+
+            // ページのプロパティをMarkdownのコメントアウトに変換
+            const mdProperties = ['---'];
+
+            // プロパティをMarkdownに変換
+            for (const [key, value] of Object.entries(properties)) {
+              const mdProperty = convertPropertyToMarkdown(key, value);
+              if (mdProperty !== null) {
+                mdProperties.push(mdProperty);
+              }
+            }
+
+            // ページIDを含める
+            mdProperties.push(`pageId: ${pageId}`);
+
+            // 既存のファイルを更新するかどうか
+            mdProperties.push('mdUpdate: true');
+            mdProperties.push('---');
+
+            // プロパティをMarkdownに変換
+            const mdPropertiesString = mdProperties.join('\n');
+
+            // ブロックを取得
+            const mdblocks = await n2m.pageToMarkdown(pageId);
+
+            // マークダウンに変換
+            const markdown = n2m.toMarkdownString(mdblocks);
+
+            // マークダウンにプロパティを追加
+            const markdownWithProperties = `${mdPropertiesString}\n${markdown}`;
+
+            // oddMarkdownからmarkdownWithPropertiesに上書き
+            const edit = new vscode.WorkspaceEdit();
+            edit.replace(
+              document.uri,
+              new vscode.Range(
+                document.positionAt(0),
+                document.positionAt(oddMarkdown.length)
+              ),
+              markdownWithProperties
+            );
+            vscode.workspace.applyEdit(edit);
+          } catch (e) {
+            vscode.window.showErrorMessage('ページを作成できませんでした');
+            return;
+          }
         }
         vscode.commands.executeCommand('vscodetonotion.refreshEntry');
 
@@ -328,6 +538,26 @@ export function activate(context: vscode.ExtensionContext) {
         'workbench.action.openSettings',
         'NotionとVSCodeを接続する'
       );
+    }
+  );
+
+  // アクティブなエディタに特定のキーワードが含まれているか判定する関数
+  function containsKeyword(keyword: string): boolean {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return false;
+    }
+
+    const text = editor.document.getText();
+    return text.includes(keyword);
+  }
+
+  // アクティブなエディタに特定のキーワードが含まれているか判定するコマンド
+  let containsKeywordCommand = vscode.commands.registerCommand(
+    'vscodetonotion.containsKeyword',
+    async (keyword: string) => {
+      const result = containsKeyword(keyword);
+      return result;
     }
   );
 
@@ -368,6 +598,28 @@ export function activate(context: vscode.ExtensionContext) {
     onDidChangeConfiguration
   );
 
+  // documentにステータスボタンを表示
+  const markdownToNotion = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100
+  );
+  markdownToNotion.text = '$(cloud-upload) MarkdownからNotionへ更新';
+  markdownToNotion.command = 'vscodetonotion.sendEntry';
+
+  const notionTomarkdown = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100
+  );
+  notionTomarkdown.text = '$(cloud-download) NotionからMarkdownへ更新';
+  notionTomarkdown.command = 'vscodetonotion.updateMarkdown';
+
+  markdownToNotion.show();
+  notionTomarkdown.show();
+
+  // ステータスボタンを追加
+  context.subscriptions.push(markdownToNotion);
+  context.subscriptions.push(notionTomarkdown);
+
   // ディスポーザブルを登録する
   context.subscriptions.push(disposable);
   context.subscriptions.push(showPage);
@@ -375,5 +627,9 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(settigns);
   context.subscriptions.push(notionAdd);
   context.subscriptions.push(notionSend);
+  context.subscriptions.push(notionDelete);
+  context.subscriptions.push(updateMarkdown);
+  context.subscriptions.push(containsKeywordCommand);
 }
+
 export function deactivate() {}

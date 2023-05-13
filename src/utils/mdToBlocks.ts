@@ -140,7 +140,5 @@ export const convertProperty = (data: any, allProperty: any) => {
     }
   }
 
-  console.log(properties);
-
   return properties;
 };

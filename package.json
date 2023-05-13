@@ -62,6 +62,14 @@
           "light": "resources/light/refresh.svg",
           "dark": "resources/dark/refresh.svg"
         }
+      },
+      {
+        "command": "vscodetonotion.updateMarkdown",
+        "title": "Notionの内容をマークダウンに更新する"
+      },
+      {
+        "command": "vscodetonotion.containsKeyword",
+        "title": "キーワードを含むかどうかを判定する"
       }
     ],
     "configuration": {
@@ -84,6 +92,26 @@
         {
           "when": "editorLangId == markdown && editorFocus",
           "command": "vscodetonotion.sendEntry",
+          "group": "myGroup@1"
+        },
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.updateMarkdown",
+          "group": "myGroup@1"
+        },
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.editEntry",
+          "group": "myGroup@1"
+        },
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.deleteEntry",
+          "group": "myGroup@1"
+        },
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.refreshEntry",
           "group": "myGroup@1"
         }
       ],
@@ -168,7 +196,9 @@
   "dependencies": {
     "@tryfabric/martian": "^1.2.4",
     "gray-matter": "^4.0.3",
+    "mime-types": "^2.1.35",
     "notion-to-md": "^2.5.6",
-    "rimraf": "^5.0.0"
+    "rimraf": "^5.0.0",
+    "uuid": "^9.0.0"
   }
 }
