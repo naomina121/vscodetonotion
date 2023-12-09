@@ -1,0 +1,204 @@
+{
+  "name": "vscodetonotion",
+  "displayName": "VScodeToNotion",
+  "description": "VSCodeからNotionを直接編集できる拡張機能",
+  "version": "0.0.6",
+  "publisher": "naomina121",
+  "icon": "resources/notion.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naomina121/vscodetonotion"
+  },
+  "engines": {
+    "vscode": "^1.77.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscodetonotion.notionToConection",
+        "title": "Notion一覧を表示させる"
+      },
+      {
+        "command": "vscodetonotion.sendEntry",
+        "title": "エディター内容をNotionのデータベースに送信する"
+      },
+      {
+        "command": "vscodetonotion.settings",
+        "title": "Notionの設定ファイルを開く"
+      },
+      {
+        "command": "vscodetonotion.deleteEntry",
+        "title": "このファイルを削除する",
+        "icon": {
+          "light": "resources/light/delete.svg",
+          "dark": "resources/dark/delete.svg"
+        }
+      },
+      {
+        "command": "vscodetonotion.addEntry",
+        "title": "新規でファイルを作成する",
+        "icon": {
+          "light": "resources/light/add.svg",
+          "dark": "resources/dark/add.svg"
+        }
+      },
+      {
+        "command": "vscodetonotion.editEntry",
+        "title": "このファイルを編集する",
+        "icon": {
+          "light": "resources/light/edit.svg",
+          "dark": "resources/dark/edit.svg"
+        }
+      },
+      {
+        "command": "vscodetonotion.refreshEntry",
+        "title": "更新する",
+        "icon": {
+          "light": "resources/light/refresh.svg",
+          "dark": "resources/dark/refresh.svg"
+        }
+      },
+      {
+        "command": "vscodetonotion.updateMarkdown",
+        "title": "Notionの内容をマークダウンに更新する"
+      },
+      {
+        "command": "vscodetonotion.containsKeyword",
+        "title": "キーワードを含むかどうかを判定する"
+      }
+    ],
+    "configuration": {
+      "title": "NotionとVSCodeを接続する",
+      "properties": {
+        "vscodetonotion.api": {
+          "type": "string",
+          "default": "",
+          "description": "APIを設定してください"
+        },
+        "vscodetonotion.databaseId": {
+          "type": "string",
+          "default": "",
+          "description": "ページIDを設定してください"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.sendEntry",
+          "group": "myGroup@1"
+        },
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.updateMarkdown",
+          "group": "myGroup@1"
+        },
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.editEntry",
+          "group": "myGroup@1"
+        },
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.deleteEntry",
+          "group": "myGroup@1"
+        },
+        {
+          "when": "editorLangId == markdown && editorFocus",
+          "command": "vscodetonotion.refreshEntry",
+          "group": "myGroup@1"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "vscodetonotion.addEntry",
+          "when": "view == package-openPages",
+          "group": "navigation"
+        },
+        {
+          "command": "vscodetonotion.refreshEntry",
+          "when": "view == package-openPages",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "vscodetonotion.editEntry",
+          "when": "view == package-openPages",
+          "group": "inline"
+        },
+        {
+          "command": "vscodetonotion.deleteEntry",
+          "when": "view == package-openPages",
+          "group": "inline"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "package-openPages",
+        "contents": "まず、設定画面を開いて、NotionのAPIと使用するデーターベースIDを入力します。\n [設定画面を開く](command:vscodetonotion.settings)\nNotionとの接続設定がお済みの方は、Notions一覧ページを開いてください \n [Notionのページ一覧を開く](command:vscodetonotion.notionToConection)",
+        "when": "!viewlet:package-openPages.visible"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "notion-explorer",
+          "title": "VscodeToNotion",
+          "icon": "/resources/package-notion-svgrepo-com.svg"
+        }
+      ]
+    },
+    "views": {
+      "notion-explorer": [
+        {
+          "id": "package-openPages",
+          "name": "Notionのページ"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "yarn run compile-tests && yarn run compile && yarn run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@notionhq/client": "^2.2.5",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.77.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "@vscode/test-electron": "^2.3.0",
+    "eslint": "^8.39.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "ts-loader": "^9.4.2",
+    "typescript": "^5.0.4",
+    "webpack": "^5.81.0",
+    "webpack-cli": "^5.0.2"
+  },
+  "dependencies": {
+    "@tryfabric/martian": "^1.2.4",
+    "gray-matter": "^4.0.3",
+    "mime-types": "^2.1.35",
+    "notion-to-md": "^2.5.6",
+    "rimraf": "^5.0.0",
+    "uuid": "^9.0.0"
+  }
+}
